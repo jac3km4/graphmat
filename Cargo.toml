@@ -1,0 +1,31 @@
+[package]
+name = "graphmat"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["jekky"]
+
+[dependencies]
+hashbrown = "0.14"
+ordered-multimap = "0.7"
+
+[dependencies.bumpalo]
+version = "3"
+features = ["collections"]
+
+[dependencies.object]
+version = "0.32"
+default-features = false
+features = ["std", "read"]
+
+[dependencies.iced-x86]
+version = "1"
+default-features = false
+features = ["std", "decoder"]
+
+[dependencies.clap]
+version = "4"
+features = ["derive"]
+
+[dev-dependencies]
+test-case = "3"
