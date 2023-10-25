@@ -1,5 +1,6 @@
 use std::hash::Hash;
 
+use ordered_multimap::list_ordered_multimap::EntryValues;
 use ordered_multimap::ListOrderedMultimap;
 
 /// A graph represented as an adjacency list.
@@ -25,12 +26,12 @@ impl<A: Eq + PartialEq + Hash> Graph<A> {
         self.0.contains_key(&a)
     }
 
-    /// Returns a [Star] representing the node and its vertices.
+    /// Returns a [Star] representing the vertex and its edges.
     #[inline]
-    pub fn get_star(&self, node: A) -> Star<'_, A> {
+    pub fn get_star(&self, vertex: A) -> Star<'_, A> {
         Star {
-            vertex: node,
-            graph: self,
+            edges: self.0.get_all(&vertex),
+            vertex,
         }
     }
 }
@@ -39,10 +40,10 @@ impl<A: Eq + PartialEq + Hash> Graph<A> {
 #[derive(Debug)]
 pub struct Star<'graph, A> {
     vertex: A,
-    graph: &'graph Graph<A>,
+    edges: EntryValues<'graph, A, A>,
 }
 
-impl<'graph, A: Eq + PartialEq + Hash> Star<'graph, A> {
+impl<'graph, A> Star<'graph, A> {
     /// Returns the vertex.
     #[inline]
     pub fn vertex(&self) -> &A {
@@ -51,7 +52,7 @@ impl<'graph, A: Eq + PartialEq + Hash> Star<'graph, A> {
 
     /// Returns an iterator over the edges.
     #[inline]
-    pub fn edges(&self) -> impl Iterator<Item = &'graph A> + Clone {
-        self.graph.0.get_all(&self.vertex)
+    pub fn edges(&self) -> impl ExactSizeIterator<Item = &'graph A> + Clone {
+        self.edges.clone()
     }
 }

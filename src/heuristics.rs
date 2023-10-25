@@ -3,7 +3,7 @@ use bumpalo::Bump;
 
 use crate::levenshtein::{levenshtein_matrix, LevenshteinMatrix};
 use crate::match_star::MatchContext;
-use crate::object::ObjectMetadata;
+use crate::object::CodeMetadata;
 
 /// A macro for creating a heuristic composed of multiple heuristics.
 #[macro_export]
@@ -112,7 +112,7 @@ impl RelativeCodeSize {
     ) -> (BumpVec<'bump, usize>, BumpVec<'bump, usize>) {
         fn weights<'bump>(
             it: impl IntoIterator<Item = u64>,
-            ctx: &ObjectMetadata,
+            ctx: &CodeMetadata,
             bump: &'bump Bump,
         ) -> BumpVec<'bump, (usize, f64)> {
             let lens: BumpVec<'bump, _> = it
@@ -132,8 +132,8 @@ impl RelativeCodeSize {
             weights
         }
 
-        let it1 = weights(lhs, ctx.lhs_object(), bump);
-        let mut it2 = weights(rhs, ctx.rhs_object(), bump).into_iter().peekable();
+        let it1 = weights(lhs, ctx.lhs_metadata(), bump);
+        let mut it2 = weights(rhs, ctx.rhs_metadata(), bump).into_iter().peekable();
         let mut counter = 0;
 
         let mut labels1 = bumpalo::vec![in bump; usize::MAX; it1.len()];
@@ -185,30 +185,26 @@ mod test {
     use crate::graph::Graph;
     use crate::object::FunctionMetadata;
 
-    fn test_obj1() -> ObjectMetadata {
+    fn test_obj1() -> CodeMetadata {
         let func1 = FunctionMetadata::new(vec![Mnemonic::Call, Mnemonic::Mov]);
         let func2 = FunctionMetadata::new(vec![Mnemonic::Mov]);
         let func3 = FunctionMetadata::new(vec![]);
-        ObjectMetadata::new(
-            Graph::new(),
-            [(512, func1.clone()), (513, func2.clone()), (514, func3.clone())]
+        CodeMetadata {
+            call_graph: Graph::new(),
+            functions: [(512, func1.clone()), (513, func2.clone()), (514, func3.clone())]
                 .into_iter()
                 .collect(),
-            0,
-            0,
-        )
+        }
     }
 
-    fn test_obj2() -> ObjectMetadata {
+    fn test_obj2() -> CodeMetadata {
         let func1 = FunctionMetadata::new(vec![Mnemonic::Call, Mnemonic::Mov]);
         let func2 = FunctionMetadata::new(vec![Mnemonic::Mov]);
         let func3 = FunctionMetadata::new(vec![]);
-        ObjectMetadata::new(
-            Graph::new(),
-            [(1024, func1), (1025, func2), (1026, func3)].into_iter().collect(),
-            0,
-            0,
-        )
+        CodeMetadata {
+            call_graph: Graph::new(),
+            functions: [(1024, func1), (1025, func2), (1026, func3)].into_iter().collect(),
+        }
     }
 
     #[test_case(&[512, 513, 514], &[1024, 1025, 1026], &[0, 1, 2], &[0, 1, 2])]

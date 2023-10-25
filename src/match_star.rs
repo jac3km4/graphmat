@@ -4,7 +4,7 @@ use bumpalo::Bump;
 use crate::graph::Star;
 use crate::heuristics::EdgeDistanceHeuristic;
 use crate::levenshtein::{levenshtein, Edit};
-use crate::object::ObjectMetadata;
+use crate::object::CodeMetadata;
 
 const INSERT_DELETE_COST: usize = 1;
 const CONFLICT_COST: usize = 1;
@@ -18,8 +18,8 @@ pub fn match_star(
 ) -> (usize, Vec<(u64, u64)>) {
     // The initial cost is based on the distance between the two sets of opcodes.
     let mut cost = levenshtein(
-        ctx.lhs_object.get_function(*lhs.vertex()).unwrap().opcodes(),
-        ctx.rhs_object.get_function(*rhs.vertex()).unwrap().opcodes(),
+        ctx.lhs_metadata.get_function(*lhs.vertex()).unwrap().opcodes(),
+        ctx.rhs_metadata.get_function(*rhs.vertex()).unwrap().opcodes(),
         bump,
     );
 
@@ -32,7 +32,7 @@ pub fn match_star(
     for (i, edit) in mat.edits().with_indices() {
         let j = match edit {
             Edit::Substitute(j) => j,
-            Edit::Noop => i,
+            Edit::Noop if rhs.edges().len() > i => i,
             _ => {
                 cost += INSERT_DELETE_COST;
                 continue;
@@ -100,23 +100,26 @@ fn count_conflicts(original: &[(u64, u64)], dedup: &[(u64, u64)]) -> usize {
 /// Context used for matching stars in call graphs.
 #[derive(Debug, Clone, Copy)]
 pub struct MatchContext<'a> {
-    lhs_object: &'a ObjectMetadata,
-    rhs_object: &'a ObjectMetadata,
+    lhs_metadata: &'a CodeMetadata,
+    rhs_metadata: &'a CodeMetadata,
 }
 
 impl<'a> MatchContext<'a> {
-    pub(crate) fn new(lhs_object: &'a ObjectMetadata, rhs_object: &'a ObjectMetadata) -> Self {
-        Self { lhs_object, rhs_object }
+    pub(crate) fn new(lhs_object: &'a CodeMetadata, rhs_object: &'a CodeMetadata) -> Self {
+        Self {
+            lhs_metadata: lhs_object,
+            rhs_metadata: rhs_object,
+        }
     }
 
     #[inline]
-    pub(crate) fn lhs_object(&self) -> &'a ObjectMetadata {
-        self.lhs_object
+    pub(crate) fn lhs_metadata(&self) -> &'a CodeMetadata {
+        self.lhs_metadata
     }
 
     #[inline]
-    pub(crate) fn rhs_object(&self) -> &'a ObjectMetadata {
-        self.rhs_object
+    pub(crate) fn rhs_metadata(&self) -> &'a CodeMetadata {
+        self.rhs_metadata
     }
 }
 
